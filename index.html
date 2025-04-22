@@ -67,7 +67,7 @@
 
             // Add content div inside each cell
             const content = document.createElement('div');
-            content.className = 'cell-content';
+            content.className = `cell-content-${cellIndex}`;
             //content.innerHTML = `<button onclick="collapseCell(event)">Close</button>`;
             cell.appendChild(content);
             
@@ -100,14 +100,16 @@
             cell.classList.add('expanded');
 
             // Load external HTML content for the cell
-            const contentDiv = cell.querySelector('.cell-content');
+            const contentDiv = cell.querySelector(`.cell-content-${index}`);
             fetch(`cell-content-${index}.html`) // Load content from `cell-content-<index>.html`
                 .then(response => response.text())
                 .then(data => {
                     contentDiv.innerHTML = data;
+                    return
                 })
                 .catch(() => {
                     contentDiv.innerHTML = `<p>Content not found for cell #${index}</p><button onclick="collapseCell(event)">Close</button>`;
+                    return
                 });
         }
 
