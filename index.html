@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #bg {
+            display: grid;
+            background-image: url('./pic/bg/bg1.jpg'); /* Background image */
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            width: 100%;
+            height: 100%;
+        }
+        .cell {
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Optional: to visualize the grid */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: all 0.5s ease; /* Smooth transition for movement and size */
+            font-size: 12px;
+            text-align: center;
+        }
+        .cell.expanded {
+            position: absolute; /* Position the expanded cell absolutely */
+            top: 10%; /* Center vertically */
+            left: 10%; /* Center horizontally */
+            width: 80%; /* Fill 80% of the screen width */
+            height: 80%; /* Fill 80% of the screen height */
+            background-color: rgba(255, 255, 255, 0.8); /* Highlight expanded cell */
+            z-index: 1000; /* Bring expanded cell to the front */
+        }
+        .cell-content {
+            display: none; /* Hidden by default */
+            text-align: center;
+        }
+        .cell.expanded .cell-content {
+            display: block; /* Show content when expanded */
+        }
+    </style>
+</head>
+<body>
+    <div id="bg"></div>
+    <script>
+        const bg = document.getElementById('bg');
+        const divisionsX = 10; // Number of divisions along the width
+        const divisionsY = 10; // Number of divisions along the height
+
+        // Set grid template dynamically
+        bg.style.gridTemplateColumns = `repeat(${divisionsX}, 1fr)`;
+        bg.style.gridTemplateRows = `repeat(${divisionsY}, 1fr)`;
+
+        // Create cells dynamically
+        for (let i = 0; i < divisionsX * divisionsY; i++) {
+            const cellIndex = i + 1;
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+
+            // Add content div inside each cell
+            const content = document.createElement('div');
+            content.className = 'cell-content';
+            //content.innerHTML = `<button onclick="collapseCell(event)">Close</button>`;
+            cell.appendChild(content);
+            
+            // Check if the corresponding HTML file exists
+            fetch(`cell-content-${cellIndex}.html`) // Load content from `cell-content-<index>.html`
+                .then(response => {
+                    if (response.ok) {
+                        // Color the cell to indicate content exists
+                        cell.style.backgroundColor = 'rgba(255, 255, 255, 0.7)'; // Light green background
+                        // // Add click event listener to expand the cell and load full content
+                        cell.addEventListener('click', () => expandCell(cell, cellIndex));
+                        bg.appendChild(cell); // Add the cell to the grid only if content exists
+                    }else{
+                        cell.style.backgroundColor = 'rgba(255,255,255,0.0)';
+                        bg.appendChild(cell);
+                    }
+                })
+        }
+
+        // Function to expand the clicked cell and load external content
+        function expandCell(cell, index) {
+            // Collapse any previously expanded cell
+            const expandedCell = document.querySelector('.cell.expanded');
+            if (expandedCell) {
+                expandedCell.classList.remove('expanded');
+                return;
+            }
+
+            // Expand the clicked cell
+            cell.classList.add('expanded');
+
+            // Load external HTML content for the cell
+            const contentDiv = cell.querySelector('.cell-content');
+            fetch(`cell-content-${index}.html`) // Load content from `cell-content-<index>.html`
+                .then(response => response.text())
+                .then(data => {
+                    contentDiv.innerHTML = data;
+                })
+                .catch(() => {
+                    contentDiv.innerHTML = `<p>Content not found for cell #${index}</p><button onclick="collapseCell(event)">Close</button>`;
+                });
+        }
+
+        // Function to collapse the expanded cell
+        function collapseCell(event) {
+            event.stopPropagation(); // Prevent triggering the cell's click event
+            const cell = event.target.closest('.cell');
+            cell.classList.remove('expanded');
+        }
+    </script>
+</body>
+</html>
