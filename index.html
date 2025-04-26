@@ -49,74 +49,121 @@
     </style>
 </head>
 <body>
-    <div id="bg"></div>
     <script>
-        const bg = document.getElementById('bg');
+        function getStyle(num_of_columns,num_of_rows){
 
-        const divisionsX = 10; // Number of divisions along the width
-        const divisionsY = 10; // Number of divisions along the height
-
-        // Set grid template dynamically
-        bg.style.gridTemplateColumns = `repeat(${divisionsX}, 1fr)`;
-        bg.style.gridTemplateRows = `repeat(${divisionsY}, 1fr)`;
-
-        // Create cells dynamically
-        for (let i = 0; i < divisionsX * divisionsY; i++) {
-            const cellIndex = i;
-            const cell = document.createElement('div');
-            cell.className = `cell`;
-
-            // Add content div inside each cell
-            const content = document.createElement('div');
-            content.className = `cell-content-${cellIndex}`;
-            //content.innerHTML = `<button onclick="collapseCell(event)">Close</button>`;
-            cell.appendChild(content);
-            
-            // Check if the corresponding HTML file exists
-            fetch(`cell-content-${cellIndex}.html`) // Load content from `cell-content-<index>.html`
-                .then(response => {
-                    if (response.ok) {
-                        // Color the cell to indicate content exists
-                        cell.style.backgroundColor = 'rgba(255, 255, 255, 0.7)'; // Light green background
-                        // // Add click event listener to expand the cell and load full content
-                        cell.addEventListener('click', () => expandCell(cell, cellIndex));
-                        bg.appendChild(cell); // Add the cell to the grid only if content exists
-                    }else{
-                        cell.style.backgroundColor = 'rgba(255,255,255,0.0)';
-                        bg.appendChild(cell);
+            style_text = '';
+            for(let i=0;i<num_of_rows;i++){
+                for(let j=0;j<num_of_columns;j++){
+                    each_style = `
+                    #cell-${i}-${j}{
+                        border: 1px solid rgba(255, 255, 255, 0.3);
                     }
-                })
-                .catch(()=>{
-                    cell.style.backgroundColor = 'rgba(0,0,0,0.7)';
-                    bg.appendChild(cell);
-                })
+                    `;
+                    style_text += each_style;
+                }
+            }
+            
+            return style_text;
+
         }
 
-        // Function to expand the clicked cell and load external content
-        function expandCell(cell, index) {
-            // Collapse any previously expanded cell
-            const expandedCell = document.querySelector(`.cell.expanded`);
-            if (expandedCell) {
-                expandedCell.classList.remove('expanded');
-                return
+        function divide(num_of_columns,num_of_rows){
+
+            gene_html = '';
+            for(let i=0;i<num_of_rows;i++){
+                for(let j=0;j<num_of_columns;j++){
+                    each_id = `cell-${i}-${j}`;
+                    each_div = `<div id='${each_id}'></div>`;
+                    gene_html += each_div;
+                }
+            }
+            return `<div id='bg'>${gene_html}</div>`;
+
+        }
+
+        function opener(html_name,num_of_columns,num_of_rows){
+            const bg = document.getElementById('bg');
+            bg.innerHTML = '';
+            const cont = document.createElement('div');
+            cont.id = 'cont';
+            cont.style.backgroundColor = `rgba(255, 255, 255, 0.8)`;
+            cont.style.position = "absolute";
+            cont.style.top = "50%";
+            cont.style.left = "50%";
+            cont.style.transform = "translate(-50%,-50%)"
+            try{
+                fetch(html_name)
+                .then(response => response.text())
+                .then(data=>{
+                    cont.innerHTML = data;
+                    bg.appendChild(cont);
+                }).catch(()=>{
+                    cont.innerHTML = "<div>failed to get html content</div>";
+                    bg.appendChild(cont);
+                });
+            }catch{
+                cont.innerHTML = "<div>failed to get html content</div>";
+                bg.appendChild(cont);
             }
 
-            // Expand the clicked cell
-            cell.classList.add('expanded');
+            cont.addEventListener('click',()=>{render();});
 
-            // Load external HTML content for the cell
-            const contentDiv = cell.querySelector(`.cell-content-${index}`);
-            fetch(`cell-content-${index}.html`) // Load content from `cell-content-<index>.html`
-                .then(response => response.text())
-                .then(data => {
-                    contentDiv.innerHTML = data;
-                    return
-                })
-                .catch(() => {
-                    contentDiv.innerHTML = `<p>Content not found for cell #${index}</p><button onclick="collapseCell(event)">Close</button>`;
-                    return
-                })
         }
+
+        function mapArticle(row_index,column_index,html_name,num_of_columns,num_of_rows){
+
+            const id_ = `cell-${row_index}-${column_index}`;
+            try{
+                fetch(html_name)
+                .then(response=>{
+                    if(response.ok){
+                        const ele = document.getElementById(id_);
+                        ele.style.backgroundColor = `rgba(255, 255, 255, 0.8)`;
+                        ele.addEventListener('click',()=>{opener(html_name,num_of_columns,num_of_rows);});
+                        return response.text();
+                    }else{
+                        return;
+                    }
+                }).catch(()=>{
+                    return;
+                })
+                .then(data=>{
+                    const ele = document.getElementById(id_);
+                    const parser = new DOMParser();
+                    const data_html = parser.parseFromString(data,"text/html");
+                    ele.appendChild(data_html.getElementById("preview"));
+                });
+            }catch{
+                return;
+            }
+
+        }
+        
+        function render(){
+
+            num_of_columns = 10;
+            num_of_rows = 10;
+
+            const division_html = divide(num_of_columns,num_of_rows);
+            document.body.innerHTML = division_html;
+
+            const style_text = getStyle(num_of_columns,num_of_rows);
+            const style_ele = document.createElement('style');
+            style_ele.textContent = style_text;
+            const bg = document.getElementById('bg');
+            bg.style.gridTemplateColumns = `repeat(${num_of_columns},1fr)`;
+            bg.style.gridTemplateRows = `repeat(${num_of_rows},1fr)`;
+            document.head.appendChild(style_ele);
+
+            mapArticle(0,0,'art-0-0.html',num_of_columns,num_of_rows);
+
+        }
+
+        window.onload = function(){
+            render();
+        }
+
     </script>
 </body>
 </html>
